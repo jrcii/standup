@@ -7,7 +7,6 @@ require('vendor/autoload.php');
 use Facebook\WebDriver\Local\LocalWebDriver;
 use Facebook\WebDriver\Chrome\ChromeOptions;
 use Facebook\WebDriver\Chrome\ChromeDriver;
-use Facebook\WebDriver\Remote\DesiredCapabilities;
 use Facebook\WebDriver\WebDriverBy;
 
 // How to find Google username and password on this machine
@@ -16,6 +15,10 @@ $macosKeychainEasePasswordName 	= 'ease'; // Must be in macOS Keychain under thi
 
 // The Google Meet code for the standup
 $standupMeetingCode				= 'mtu-nfto-oyh';
+
+// Where to save preferences
+$prefDirNoTrailingSlash			= '/Users/jcornell/Library/Application Support/Google/Chrome/Selenium';
+$dataDirNoTrailingSlash			= '/Users/jcornell/Library/Application Support/Google/Chrome/Selenium/data';
 
 // Things Google has set and may change in the future
 $googleSigninUrl				= 'https://accounts.google.com/signin/v2/identifier?ltmpl=meet&continue=https://meet.google.com?flowName=GlifWebSignIn&flowEntry=ServiceLogin';
@@ -26,19 +29,19 @@ $googlePasswordNextButtonDomId 	= 'passwordNext';
 $googleMeetingCodeFieldDomId	= 'i3'; // Subject to change
 $googleJoinButtonXpath			= '//span[text()="Join"]';
 
+// Get password from macOS Keychain
+$password = exec("security find-generic-password -l $macosKeychainEasePasswordName -w");
+
 // Initialize handle on Chrome
 $chromeOptions = new ChromeOptions();
 $chromeOptions->addArguments(['start-maximized']);
-//$chromeOptions->addArguments(['use-fake-ui-for-media-stream']);
-//$chromeOptions->addArguments(['use-fake-device-for-media-stream']);
+$chromeOptions->addArguments(["profile-directory=Default"]);
 $chromeOptions->addArguments(['disable-notifications']);
 $driver = ChromeDriver::start();
 
 // Start sign-in
 $driver->get($googleSigninUrl);
 
-// Get password from macOS Keychain
-$password = exec("security find-generic-password -l $macosKeychainEasePasswordName -w");
 
 // Login with username
 $driver->findElement(WebDriverBy::id($googleUsernameFieldDomId))->sendKeys($googleAccountEmail);
@@ -48,7 +51,7 @@ sleep(1); // Without this password field doesn't populate (because it takes too 
 // May need to increase depending on machine's browsing CPU/network speed
 $driver->findElement(WebDriverBy::name($googlePasswordFieldDomName))->sendKeys($password);
 $driver->findElement(WebDriverBy::id($googlePasswordNextButtonDomId))->click();
-sleep(2);
+sleep(2); // The load time to this point is high, provide extra time
 $driver->findElement(WebDriverBy::id($googleMeetingCodeFieldDomId))->sendKeys($standupMeetingCode);
 $driver->findElement(WebDriverBy::xpath($googleJoinButtonXpath))->click();
 exit;
